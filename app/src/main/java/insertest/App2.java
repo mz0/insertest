@@ -1,5 +1,8 @@
 package insertest;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -10,6 +13,7 @@ import java.util.Properties;
 
 public class App2 {
     public static void main(String[] args) {
+        Logger logger = LogManager.getLogger();
         String schemaName = "shsha_Blue";
         String userName = "shsha";
         String password = "999";
@@ -38,7 +42,7 @@ public class App2 {
             tf = stmt.executeUpdate(insE.createTable);
             t1 = System.currentTimeMillis();
             System.out.printf("%d ms - Create Table result is %d\n", t1 - t0, tf);
-            DbStats stat0 = new DbStats(stmt.executeQuery(DbStats.mysqlRequest));
+            MysqlStats stat0 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
             conn.setAutoCommit(false);
             t0 = System.currentTimeMillis();
             for (int i = 1; i <= 100_000; i++) {
@@ -48,16 +52,19 @@ public class App2 {
             int[] br = insSt.executeBatch();
             conn.commit();
             t1 = System.currentTimeMillis();
+            MysqlStats stat1 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
+            logger.info(stat1.diffSTable(stat0));
             int nonZeroes = 0; int printMe = 5;
+            int expectResult = -2;
             for (int res : br) {
-                if (res != -2) {
+                if (res != expectResult) {
                     nonZeroes++;
                     if (printMe > 0) {
                         System.out.println(res);  printMe--;
                     }
                 }
             }
-            String summary = nonZeroes == 0 ? "all zeroes" : String.format("%d non-zeroes", nonZeroes);
+            String summary = nonZeroes == 0 ? "all " + expectResult: String.format("%d non-default", nonZeroes);
             System.out.printf("%d ms - Insert result has length %d (%s)\n", t1 - t0, br.length, summary);
         } catch (SQLException e) {
             System.out.println(e.getMessage());
