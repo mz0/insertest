@@ -24,7 +24,7 @@ public class App2 {
         Properties connectionProps = new Properties();
         connectionProps.put("user", userName);
         connectionProps.put("password", password);
-        connectionProps.put("rewriteBatchedStatements", "true");
+        connectionProps.put("rewriteBatchedStatements", "OFF");
         connectionProps.put("sslMode", "DISABLED");
         connectionProps.put("characterEncoding", "latin1");
         connectionProps.put("createDatabaseIfNotExist", "true");
