@@ -33,7 +33,7 @@ public final class Insert {
                     ")";
 
     private static final String INSERT = "INSERT INTO %s VALUES %s";
-    private static final String INSERT_TUPLE = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final String INSERT_TUPLE = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     private static final int TUPLE_SIZE = 17;
 
     public final String dropTable;
@@ -42,7 +42,7 @@ public final class Insert {
     public final List<Object> insertValues;
 
 
-    public Insert(String table, short batchSize) {
+    public Insert(String table, int batchSize) {
         this.dropTable = String.format(DROP_TABLE, table);
         this.createTable = String.format(CREATE_TABLE, table);
 

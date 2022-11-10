@@ -1204,3 +1204,236 @@ app/bin/app
     295,240,192 Innodb_data_written
 
 5847 ms - Insert result has length 100000 (all -2)
+
+[prep-my-batch] 1000 vals / 100 queries
+=======================================
+> Task :app:App2.main()
+2022-11-08 12:43:03.708 INFO  insertest.App2:38 - table test, batch_size 1000, batches 100
+409 ms - DROP Table result is 0
+22 ms - Create Table result is 0
+2022-11-08 12:43:09.098 INFO  insertest.App2:65 - stats diff (over 5±0.5s interval):
+              1 Open_tables
+              1 Com_stmt_prepare
+              1 Com_set_option
+              1 Open_table_definitions
+              1 Opened_tables
+              1 Com_commit
+              1 Created_tmp_tables
+              1 Opened_files
+              1 Table_locks_immediate
+              1 Table_open_cache_misses
+              1 Com_stmt_reprepare
+              1 Com_show_status
+              1 Opened_table_definitions
+              2 Select_scan
+              2 Com_select
+              2 Innodb_data_reads
+              2 Innodb_buffer_pool_reads
+              2 Innodb_pages_read
+              2 Qcache_not_cached
+             57 Innodb_dblwr_writes
+             67 Innodb_log_writes
+             95 Innodb_os_log_fsyncs
+            101 Handler_commit
+            101 Com_stmt_execute
+            101 Com_insert
+            102 Table_open_cache_hits
+            105 Queries
+            105 Questions
+            131 Innodb_buffer_pool_pages_data
+            202 Handler_external_lock
+            290 Innodb_data_fsyncs
+            710 Handler_read_rnd_next
+          1,398 Innodb_buffer_pool_pages_dirty
+          5,441 Innodb_pages_written
+          5,441 Innodb_buffer_pool_pages_flushed
+          5,441 Innodb_dblwr_pages_written
+          5,776 Innodb_data_writes
+          6,769 Innodb_pages_created
+          8,442 Bytes_sent
+         32,768 Innodb_data_read
+        100,000 Innodb_rows_inserted
+        100,354 Handler_write
+        260,380 Innodb_buffer_pool_write_requests
+        311,394 Innodb_log_write_requests
+        410,428 Innodb_buffer_pool_read_requests
+      2,146,304 Innodb_buffer_pool_bytes_data
+     22,904,832 Innodb_buffer_pool_bytes_dirty
+    101,614,158 Bytes_received
+    109,640,704 Innodb_os_log_written
+    287,941,632 Innodb_data_written
+
+4842 ms - Insert result has length 100 (all 1000)
+
+> Task :app:App2.main()
+2022-11-08 12:59:00.139 INFO  insertest.App2:38 - table test, batch_size 1000, batches 100
+449 ms - DROP Table result is 0
+32 ms - Create Table result is 0
+2022-11-08 12:59:05.435 INFO  insertest.App2:65 - stats diff (over 5±0.5s interval):
+              1 Open_tables
+              1 Com_stmt_prepare
+              1 Com_set_option
+              1 Open_table_definitions
+              1 Opened_tables
+              1 Com_commit
+              1 Created_tmp_tables
+              1 Opened_files
+              1 Table_locks_immediate
+              1 Table_open_cache_misses
+              1 Com_stmt_reprepare
+              1 Com_show_status
+              1 Opened_table_definitions
+              2 Select_scan
+              2 Com_select
+              2 Qcache_not_cached
+              3 Innodb_data_reads
+              3 Innodb_buffer_pool_reads
+              3 Innodb_pages_read
+             51 Innodb_dblwr_writes
+             66 Innodb_log_writes
+             90 Innodb_os_log_fsyncs
+            101 Handler_commit
+            101 Com_stmt_execute
+            101 Com_insert
+            102 Table_open_cache_hits
+            105 Queries
+            105 Questions
+            202 Handler_external_lock
+            275 Innodb_data_fsyncs
+            397 Innodb_buffer_pool_pages_data
+            710 Handler_read_rnd_next
+          1,479 Innodb_buffer_pool_pages_dirty
+          5,368 Innodb_pages_written
+          5,368 Innodb_buffer_pool_pages_flushed
+          5,368 Innodb_dblwr_pages_written
+          5,700 Innodb_data_writes
+          6,798 Innodb_pages_created
+          8,441 Bytes_sent
+         49,152 Innodb_data_read
+        100,000 Innodb_rows_inserted
+        100,354 Handler_write
+        260,394 Innodb_buffer_pool_write_requests
+        311,433 Innodb_log_write_requests
+        410,520 Innodb_buffer_pool_read_requests
+      6,504,448 Innodb_buffer_pool_bytes_data
+     24,231,936 Innodb_buffer_pool_bytes_dirty
+    101,614,158 Bytes_received
+    109,638,144 Innodb_os_log_written
+    285,548,544 Innodb_data_written
+
+4689 ms - Insert result has length 100 (all 1000)
+
+> Task :app:App2.main()
+2022-11-08 13:00:07.121 INFO  insertest.App2:38 - table test, batch_size 1000, batches 100
+433 ms - DROP Table result is 0
+25 ms - Create Table result is 0
+2022-11-08 13:00:12.434 INFO  insertest.App2:65 - stats diff (over 5±0.5s interval):
+              1 Open_tables
+              1 Com_stmt_prepare
+              1 Com_set_option
+              1 Open_table_definitions
+              1 Opened_tables
+              1 Com_commit
+              1 Created_tmp_tables
+              1 Opened_files
+              1 Table_locks_immediate
+              1 Table_open_cache_misses
+              1 Com_stmt_reprepare
+              1 Com_show_status
+              1 Opened_table_definitions
+              2 Select_scan
+              2 Com_select
+              2 Qcache_not_cached
+              3 Innodb_data_reads
+              3 Innodb_buffer_pool_reads
+              3 Innodb_pages_read
+             58 Innodb_dblwr_writes
+             66 Innodb_log_writes
+             85 Innodb_os_log_fsyncs
+            101 Handler_commit
+            101 Com_stmt_execute
+            101 Com_insert
+            102 Table_open_cache_hits
+            105 Queries
+            105 Questions
+            198 Innodb_buffer_pool_pages_data
+            202 Handler_external_lock
+            292 Innodb_data_fsyncs
+            710 Handler_read_rnd_next
+          1,309 Innodb_buffer_pool_pages_dirty
+          5,540 Innodb_pages_written
+          5,540 Innodb_buffer_pool_pages_flushed
+          5,540 Innodb_dblwr_pages_written
+          5,873 Innodb_data_writes
+          6,767 Innodb_pages_created
+          8,442 Bytes_sent
+         49,152 Innodb_data_read
+        100,000 Innodb_rows_inserted
+        100,354 Handler_write
+        260,394 Innodb_buffer_pool_write_requests
+        311,460 Innodb_log_write_requests
+        410,521 Innodb_buffer_pool_read_requests
+      3,244,032 Innodb_buffer_pool_bytes_data
+     21,446,656 Innodb_buffer_pool_bytes_dirty
+    101,614,158 Bytes_received
+    109,620,224 Innodb_os_log_written
+    291,165,184 Innodb_data_written
+
+4772 ms - Insert result has length 100 (all 1000)
+
+> Task :app:App2.main()
+2022-11-10 12:15:12.204 INFO  insertest.App2:38 - table test, batch_size 1000, batches 100, autocommit TRUE
+440 ms - DROP Table result is 0
+20 ms - Create Table result is 0
+2022-11-10 12:15:18.147 INFO  insertest.App2:66 - stats diff (over 6±0.5s interval):
+              1 Open_tables
+              1 Com_stmt_prepare
+              1 Com_set_option
+              1 Open_table_definitions
+              1 Opened_tables
+              1 Created_tmp_tables
+              1 Opened_files
+              1 Table_locks_immediate
+              1 Table_open_cache_misses
+              1 Com_stmt_reprepare
+              1 Com_show_status
+              1 Opened_table_definitions
+              2 Select_scan
+              2 Com_select
+              2 Innodb_data_reads
+              2 Innodb_buffer_pool_reads
+              2 Innodb_pages_read
+              2 Qcache_not_cached
+             56 Innodb_dblwr_writes
+             91 Innodb_buffer_pool_pages_data
+            100 Handler_commit
+            101 Com_stmt_execute
+            101 Com_insert
+            102 Table_open_cache_hits
+            104 Queries
+            104 Questions
+            153 Innodb_log_writes
+            172 Innodb_os_log_fsyncs
+            202 Handler_external_lock
+            380 Innodb_data_fsyncs
+            710 Handler_read_rnd_next
+          1,309 Innodb_buffer_pool_pages_dirty
+          5,528 Innodb_pages_written
+          5,528 Innodb_buffer_pool_pages_flushed
+          5,528 Innodb_dblwr_pages_written
+          5,942 Innodb_data_writes
+          6,677 Innodb_pages_created
+          8,560 Bytes_sent
+         32,768 Innodb_data_read
+        100,000 Innodb_rows_inserted
+        100,354 Handler_write
+        262,237 Innodb_buffer_pool_write_requests
+        311,516 Innodb_log_write_requests
+        412,364 Innodb_buffer_pool_read_requests
+      1,490,944 Innodb_buffer_pool_bytes_data
+     21,446,656 Innodb_buffer_pool_bytes_dirty
+    101,614,147 Bytes_received
+    110,051,840 Innodb_os_log_written
+    291,201,024 Innodb_data_written
+
+5370 ms - Insert result has length 100 (all 1000)

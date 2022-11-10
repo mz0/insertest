@@ -3,6 +3,8 @@ package insertest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,24 +14,30 @@ import java.util.List;
 import java.util.Properties;
 
 public class App2 {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Logger logger = LogManager.getLogger();
-        String schemaName = "shsha_Blue";
-        String userName = "shsha";
-        String password = "999";
-        String serverName = "localhost";
-        String portNumber = String.valueOf(3306);
-        String dbms = "mysql";
-        String jdbcUrl =  "jdbc:" + dbms + "://" + serverName + ":" + portNumber + "/" + schemaName;
+        if (args.length > 0) {
+            logger.info("arg0 {}", args[0]);
+        }
         Properties connectionProps = new Properties();
-        connectionProps.put("user", userName);
-        connectionProps.put("password", password);
-        connectionProps.put("rewriteBatchedStatements", "true");
-        connectionProps.put("sslMode", "DISABLED");
-        connectionProps.put("characterEncoding", "latin1");
-        connectionProps.put("createDatabaseIfNotExist", "true");
-        connectionProps.put("useServerPrepStmts", "true");
-        Insert insE = new Insert("test", (short) 1);
+        try (FileInputStream fis = new FileInputStream("connection.properties")) {
+            connectionProps.load(fis);
+        }
+        // use.url = jdbc:mysql://localhost:3306 / use.schema = shsha_Blue / use.table = test /
+        // use.batch_size = 2500 / use.batches = 40000
+        String schemaName = connectionProps.getProperty("use.schema");
+        String jdbcUrl =  connectionProps.getProperty("use.url") + "/" + schemaName;
+        String tableName = connectionProps.getProperty("use.table");
+        boolean autoCommit = connectionProps.getProperty("use.autocommit").equalsIgnoreCase("TRUE");
+        int insertRecords = Integer.parseInt(connectionProps.getProperty("use.batch_size"));
+        int batches = Integer.parseInt(connectionProps.getProperty("use.batches"));
+        for (Object k : connectionProps.keySet()) {
+            if (((String) k).startsWith("use.")) {
+                connectionProps.remove(k);
+            }
+        }
+        logger.info("table {}, batch_size {}, batches {}, autoCommit {}", tableName, insertRecords, batches, autoCommit);
+        Insert insE = new Insert(tableName, insertRecords);
         long t0 = System.currentTimeMillis();
         try (Connection conn = DriverManager.getConnection(jdbcUrl, connectionProps);
              PreparedStatement insSt = conn.prepareStatement(insE.insert);
@@ -43,19 +51,22 @@ public class App2 {
             t1 = System.currentTimeMillis();
             System.out.printf("%d ms - Create Table result is %d\n", t1 - t0, tf);
             MysqlStats stat0 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
-            conn.setAutoCommit(false);
+
+            conn.setAutoCommit(autoCommit);
             t0 = System.currentTimeMillis();
-            for (int i = 1; i <= 100_000; i++) {
-                setParams(insSt, i, insE.insertValues);
+            int pkStart = 1;
+            for (int i = 0; i < batches; i++) {
+                makeBatch(insSt, pkStart, insE.insertValues, insertRecords);
                 insSt.addBatch();
+                pkStart = pkStart + insertRecords;
             }
             int[] br = insSt.executeBatch();
-            conn.commit();
+            if (!autoCommit) { conn.commit(); }
             t1 = System.currentTimeMillis();
             MysqlStats stat1 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
             logger.info(stat1.diffSTable(stat0));
             int nonZeroes = 0; int printMe = 5;
-            int expectResult = -2;
+            int expectResult = insertRecords;
             for (int res : br) {
                 if (res != expectResult) {
                     nonZeroes++;
@@ -70,12 +81,17 @@ public class App2 {
             System.out.println(e.getMessage());
         }
     }
-    private static void setParams(PreparedStatement st, int pk, List<Object> colValues) throws SQLException {
-        st.setInt(1, pk);
-        int idx = 1;
-        for (Object colValue : colValues) {
-            ++idx;
-            st.setObject(idx, colValue);
+    private static void makeBatch(PreparedStatement st, int pkStart, List<Object> colValues, int batchSize) throws SQLException {
+        int pk = pkStart;
+        int argIdx = 0;
+        for (int bIdx = 0; bIdx < batchSize; bIdx++) {
+            ++argIdx;
+            st.setInt(argIdx, pk);
+            for (Object colValue : colValues) {
+                ++argIdx;
+                st.setObject(argIdx, colValue);
+            }
+            pk++;
         }
     }
 }
