@@ -14,7 +14,7 @@ public final class Insert {
     public static final String CREATE_TABLE =
             "CREATE TABLE %s (" +
                     "id BIGINT PRIMARY KEY," +
-                    "column_a VARCHAR(60)," +
+                    "column_a VARCHAR(60)," + // 1
                     "column_b VARCHAR(60)," +
                     "column_c VARCHAR(60)," +
                     "column_d VARCHAR(60)," +
@@ -29,7 +29,7 @@ public final class Insert {
                     "column_m VARCHAR(60)," +
                     "column_n VARCHAR(60)," +
                     "column_o VARCHAR(60)," +
-                    "column_p VARCHAR(60)" +
+                    "column_p VARCHAR(60)" +  // 16
                     ")";
 
     private static final String INSERT = "INSERT INTO %s VALUES %s";
