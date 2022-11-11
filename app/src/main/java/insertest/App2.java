@@ -85,8 +85,8 @@ public class App2 {
         int pk = pkStart;
         int argIdx = 0;
         for (int bIdx = 0; bIdx < batchSize; bIdx++) {
-            ++argIdx;
-            st.setInt(argIdx, pk);
+            // ++argIdx;
+            // st.setInt(argIdx, pk);
             for (Object colValue : colValues) {
                 ++argIdx;
                 st.setObject(argIdx, colValue);

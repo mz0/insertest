@@ -13,7 +13,7 @@ public final class Insert {
 
     public static final String CREATE_TABLE =
             "CREATE TABLE %s (" +
-                    "id BIGINT PRIMARY KEY," +
+                    "id BIGINT PRIMARY KEY AUTO_INCREMENT," +
                     "column_a VARCHAR(60)," + // 1
                     "column_b VARCHAR(60)," +
                     "column_c VARCHAR(60)," +
@@ -32,9 +32,11 @@ public final class Insert {
                     "column_p VARCHAR(60)" +  // 16
                     ")";
 
-    private static final String INSERT = "INSERT INTO %s VALUES %s";
-    private static final String INSERT_TUPLE = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-    private static final int TUPLE_SIZE = 17;
+    private static final String INSERT = "INSERT INTO %s (column_a,column_b,column_c,column_d,column_e,column_f,"
+            + "column_g,column_h,column_i,column_j,column_k,column_l,column_m,column_n,column_o,column_p"
+            + ") VALUES %s";
+    private static final String INSERT_TUPLE = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    private static final int TUPLE_SIZE = 16;
 
     public final String dropTable;
     public  final String createTable;
@@ -50,7 +52,7 @@ public final class Insert {
                 .mapToObj(it -> INSERT_TUPLE)
                 .collect(Collectors.joining(","));
         this.insert = String.format(INSERT, table, insertTuple);
-        this.insertValues = IntStream.range(0, TUPLE_SIZE - 1)
+        this.insertValues = IntStream.range(0, TUPLE_SIZE)
                 .mapToObj(it -> RandomStringUtils.randomAlphanumeric(60))
                 .collect(Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList));
     }
