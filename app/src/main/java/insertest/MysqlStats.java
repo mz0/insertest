@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class MysqlStats {
-    public static final String mysqlRequest = "show global status WHERE Value <> 0";
+    public static final String mysqlRequest = "show global status";
     public static final String UpProcKey = "Uptime";
     public static final String UpStatKey = "Uptime_since_flush_status";
     private final Map<String, Object> stats;
