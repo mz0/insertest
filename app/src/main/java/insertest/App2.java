@@ -23,9 +23,8 @@ public class App2 {
         try (FileInputStream fis = new FileInputStream("connection.properties")) {
             connectionProps.load(fis);
         }
-        // use.url = jdbc:mysql://localhost:3306 / use.schema = shsha_Blue / use.table = test /
-        // use.batch_size = 2500 / use.batches = 40000
         String schemaName = connectionProps.getProperty("use.schema");
+        ensureSchemaExists(connectionProps.getProperty("use.url"), schemaName, connectionProps);
         String jdbcUrl =  connectionProps.getProperty("use.url") + "/" + schemaName;
         String tableName = connectionProps.getProperty("use.table");
         boolean autoCommit = connectionProps.getProperty("use.autocommit").equalsIgnoreCase("TRUE");
@@ -50,7 +49,7 @@ public class App2 {
             tf = stmt.executeUpdate(insE.createTable);
             t1 = System.currentTimeMillis();
             System.out.printf("%d ms - Create Table result is %d\n", t1 - t0, tf);
-            MysqlStats stat0 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
+            //MysqlStats stat0 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
 
             conn.setAutoCommit(autoCommit);
             t0 = System.currentTimeMillis();
@@ -63,8 +62,8 @@ public class App2 {
             int[] br = insSt.executeBatch();
             if (!autoCommit) { conn.commit(); }
             t1 = System.currentTimeMillis();
-            MysqlStats stat1 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
-            logger.info(stat1.diffSTable(stat0));
+            //MysqlStats stat1 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
+            //logger.info(stat1.diffSTable(stat0));
             int nonZeroes = 0; int printMe = 5;
             int expectResult = insertRecords;
             for (int res : br) {
@@ -81,6 +80,21 @@ public class App2 {
             System.out.println(e.getMessage());
         }
     }
+
+    private static void ensureSchemaExists(String jdbcDefaultUrl, String schemaName, Properties connectionProps) {
+        String jdbcUrl = jdbcDefaultUrl + "/postgres";
+        String alreadyExistsError = String.format("ERROR: database \"%s\" already exists", schemaName);
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, connectionProps);
+             Statement stmt = conn.createStatement()
+        ) {
+            stmt.execute("CREATE DATABASE " + schemaName);
+        } catch (SQLException e) {
+            if (!e.getMessage().equals(alreadyExistsError)) {
+                throw new RuntimeException(e.getMessage());
+            }
+        }
+    }
+
     private static void makeBatch(PreparedStatement st, int pkStart, List<Object> colValues, int batchSize) throws SQLException {
         int pk = pkStart;
         int argIdx = 0;

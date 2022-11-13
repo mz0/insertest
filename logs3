@@ -1,0 +1,17 @@
+docker postgres:14.5-alpine
+
+> Task :app:App2.main()
+2022-11-13 21:33:15.568 INFO  insertest.App2:38 - table test, batch_size 1000, batches 100, autoCommit false
+121 ms - DROP Table result is 0
+20 ms - Create Table result is 0
+6297 ms - Insert result has length 100 (all 1000)
+
+2022-11-13 21:41:52.743 INFO  insertest.App2:38 - table test, batch_size 1000, batches 100, autoCommit false
+70 ms - DROP Table result is 0
+16 ms - Create Table result is 0
+6256 ms - Insert result has length 100 (all 1000)
+
+2022-11-13 21:44:58.924 INFO  insertest.App2:38 - table test, batch_size 1000, batches 100, autoCommit false
+51 ms - DROP Table result is 0
+16 ms - Create Table result is 0
+5912 ms - Insert result has length 100 (all 1000)
