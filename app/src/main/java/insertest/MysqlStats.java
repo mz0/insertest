@@ -2,6 +2,7 @@ package insertest;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.DecimalFormat;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -14,6 +15,10 @@ public class MysqlStats {
     public static final String UpProcKey = "Uptime";
     public static final String UpStatKey = "Uptime_since_flush_status";
     private final Map<String, Object> stats;
+
+    public void collectStats2(Statement stmt) throws SQLException {
+        ResultSet rs = stmt.executeQuery(MysqlStats.mysqlRequest);
+    }
     public MysqlStats(ResultSet rs) throws SQLException {
         stats = new HashMap<>();
         String key, valStr;
