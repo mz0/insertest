@@ -47,7 +47,7 @@ public class App2 {
             // there are 2 ways to save JSON
             //  - canonical eay via ?::JSON and setObject() - www.enterprisedb.com/blog/processing-postgresql-json-jsonb-data-java
             //  - using CAST(? AS json) - github.com/pgjdbc/pgjdbc/issues/265
-            String inSql = String.format("INSERT INTO %s VALUES (?, ?::JSON)", tableName);
+            String inSql = String.format("INSERT INTO %s VALUES (?, CAST(? AS json))", tableName);
             PreparedStatement ps = conn.prepareStatement(inSql);
             long pk = 0;
             for (String jsn : jsons) {
