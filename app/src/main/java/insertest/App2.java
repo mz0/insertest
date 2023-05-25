@@ -20,7 +20,7 @@ public class App2 {
         String schemaName, jdbcUrl, tableName, selectSql, createSql;
         Properties connectionProps = new Properties();
 
-        try (FileInputStream fis = new FileInputStream("connection.postgres.properties")) {
+        try (FileInputStream fis = new FileInputStream("connection.mysql.properties")) {
             connectionProps.load(fis);
         }
         schemaName = connectionProps.getProperty("use.schema");
@@ -43,7 +43,7 @@ public class App2 {
         try (Connection conn = DriverManager.getConnection(jdbcUrl, connectionProps);
              Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
         ) {
-            createTableIfMissing(tableName, stmt, false, "JSONB");
+            createTableIfMissing(tableName, stmt, true, "JSON");
             // there are 2 ways to save JSON
             //  - canonical eay via ?::JSON and setObject() - www.enterprisedb.com/blog/processing-postgresql-json-jsonb-data-java
             //  - using CAST(? AS json) - github.com/pgjdbc/pgjdbc/issues/265
