@@ -1,97 +1,105 @@
 package insertest;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
+import java.io.*;
+import java.rmi.RemoteException;
+import java.sql.*;
 import java.util.Properties;
 
 public class App2 {
     public static void main(String[] args) throws IOException {
         Logger logger = LogManager.getLogger();
-        if (args.length > 0) {
-            logger.info("arg0 {}", args[0]);
-        }
+        Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+        String validString = "{\"name\": \"Cap & Non Protected Amer Call \"}";
+        System.out.println(compactJson(gson, validString));
+        String schemaName, jdbcUrl, tableName, selectSql, createSql;
         Properties connectionProps = new Properties();
-        try (FileInputStream fis = new FileInputStream("connection.properties")) {
+
+        try (FileInputStream fis = new FileInputStream("connection.postgres.properties")) {
             connectionProps.load(fis);
         }
-        // use.url = jdbc:mysql://localhost:3306 / use.schema = shsha_Blue / use.table = test /
-        // use.batch_size = 2500 / use.batches = 40000
-        String schemaName = connectionProps.getProperty("use.schema");
-        String jdbcUrl =  connectionProps.getProperty("use.url") + "/" + schemaName;
-        String tableName = connectionProps.getProperty("use.table");
-        boolean autoCommit = connectionProps.getProperty("use.autocommit").equalsIgnoreCase("TRUE");
-        int insertRecords = Integer.parseInt(connectionProps.getProperty("use.batch_size"));
-        int batches = Integer.parseInt(connectionProps.getProperty("use.batches"));
+        schemaName = connectionProps.getProperty("use.schema");
+        jdbcUrl =  connectionProps.getProperty("use.url") + "/" + schemaName;
+        tableName = connectionProps.getProperty("use.table");
+        selectSql = String.format("select * from %s", tableName);
+
         for (Object k : connectionProps.keySet()) {
             if (((String) k).startsWith("use.")) {
                 connectionProps.remove(k);
             }
         }
-        logger.info("table {}, batch_size {}, batches {}, autoCommit {}", tableName, insertRecords, batches, autoCommit);
-        Insert insE = new Insert(tableName, insertRecords);
-        long t0 = System.currentTimeMillis();
+        logger.info("{} DB - table {}", dbType(jdbcUrl), tableName);
+        String[] jsons = {
+            "{\"customer_name\": \"John\", \"items\": { \"description\": \"milk\", \"quantity\": 4 } }",
+            "{\"customer_name\": \"Susan\", \"items\": { \"description\": \"bread\", \"quantity\": 2 } }",
+            "{\"customer_name\": \"Mark\", \"items\": { \"description\": \"bananas\", \"quantity\": 12 } }",
+            "{\"customer_name\": \"Jane\", \"items\": { \"description\": \"cereal\", \"quantity\": 1 } }"
+        };
         try (Connection conn = DriverManager.getConnection(jdbcUrl, connectionProps);
-             PreparedStatement insSt = conn.prepareStatement(insE.insert);
-             Statement stmt = conn.createStatement()
+             Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
         ) {
-            long t1 = System.currentTimeMillis();
-            int tf = stmt.executeUpdate(insE.dropTable);
-            System.out.printf("%d ms - DROP Table result is %d\n", t1 - t0, tf);
-            t0 = System.currentTimeMillis();
-            tf = stmt.executeUpdate(insE.createTable);
-            t1 = System.currentTimeMillis();
-            System.out.printf("%d ms - Create Table result is %d\n", t1 - t0, tf);
-            MysqlStats stat0 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
-
-            conn.setAutoCommit(autoCommit);
-            t0 = System.currentTimeMillis();
-            int pkStart = 1;
-            for (int i = 0; i < batches; i++) {
-                makeBatch(insSt, pkStart, insE.insertValues, insertRecords);
-                insSt.addBatch();
-                pkStart = pkStart + insertRecords;
+            createTableIfMissing(tableName, stmt, false, "JSONB");
+            // there are 2 ways to save JSON
+            //  - canonical eay via ?::JSON and setObject() - www.enterprisedb.com/blog/processing-postgresql-json-jsonb-data-java
+            //  - using CAST(? AS json) - github.com/pgjdbc/pgjdbc/issues/265
+            String inSql = String.format("INSERT INTO %s VALUES (?, ?::JSON)", tableName);
+            PreparedStatement ps = conn.prepareStatement(inSql);
+            long pk = 0;
+            for (String jsn : jsons) {
+                pk++;
+                ps.setLong(1, pk);
+                ps.setObject(2, jsn);
+                ps.executeUpdate();
             }
-            int[] br = insSt.executeBatch();
-            if (!autoCommit) { conn.commit(); }
-            t1 = System.currentTimeMillis();
-            MysqlStats stat1 = new MysqlStats(stmt.executeQuery(MysqlStats.mysqlRequest));
-            logger.info(stat1.diffSTable(stat0));
-            int nonZeroes = 0; int printMe = 5;
-            int expectResult = insertRecords;
-            for (int res : br) {
-                if (res != expectResult) {
-                    nonZeroes++;
-                    if (printMe > 0) {
-                        System.out.println(res);  printMe--;
-                    }
+
+            ResultSet rs = stmt.executeQuery(selectSql);
+            ResultSetMetaData rsmd = rs.getMetaData();
+            if (rsmd.getColumnCount() < 2 || !rsmd.getColumnName(2).equals("joe")) {
+                throw new RemoteException("either there less than 2 columns, or column 2 in not named 'joe'");
+            }
+            logger.info("column 2 typeName {}", rsmd.getColumnTypeName(2));
+            String joeJson;
+            while (rs.next()) {
+                try (InputStream is = rs.getBinaryStream(2);
+                     BufferedReader br = new BufferedReader(new InputStreamReader(is))
+                ) {
+                    joeJson = br.lines().reduce("", String::concat);
+                    System.out.printf("length %d: %s%n", joeJson.length(), joeJson);
                 }
             }
-            String summary = nonZeroes == 0 ? "all " + expectResult: String.format("%d non-default", nonZeroes);
-            System.out.printf("%d ms - Insert result has length %d (%s)\n", t1 - t0, br.length, summary);
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
-    private static void makeBatch(PreparedStatement st, int pkStart, List<Object> colValues, int batchSize) throws SQLException {
-        int pk = pkStart;
-        int argIdx = 0;
-        for (int bIdx = 0; bIdx < batchSize; bIdx++) {
-            ++argIdx;
-            st.setInt(argIdx, pk);
-            for (Object colValue : colValues) {
-                ++argIdx;
-                st.setObject(argIdx, colValue);
-            }
-            pk++;
+
+    private static void createTableIfMissing(String tableName, Statement stmt, boolean isMysql, String columnType) throws SQLException {
+        char quote = isMysql ? '`' : '"';
+        String createSql = String.format("CREATE TABLE IF NOT EXISTS %c%s%c (id BIGINT PRIMARY KEY, joe %s)", quote, tableName, quote, columnType);
+        stmt.executeUpdate(createSql);
+    }
+
+    private static String dbType(String jdbcUrl) {
+     // jdbc:mysql://[host1][:port],[host2][:port][,[host3][:port]]...[/[database]][?prop1=pVal1[&prop2=pVal2]...]
+     // jdbc:mysql:loadbalance://[host1][:port],[host2][:port][,[host3][:port]]...[/[database]][?prop1=pVal1...]
+     // mysqlx: | mysqlx+srv:
+     // jdbc:mysql+srv: | jdbc:mysql+srv:loadbalance: | jdbc:mysql+srv:replication:
+     // jdbc:oracle:thin:@//myoracle.db.server:1521/my_servicename
+     // jdbc:oracle:thin:@myoracle.db.server:1521:my_sid
+     // jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=myoracle.db.server)(PORT=1521))... using tnsnames.ora file
+        String[] uspl = jdbcUrl.split(":");
+        if (uspl.length < 2) {
+            return uspl[0].startsWith("mysqlx") ? "mysqlx" : "unknown";
+        } else {
+            return uspl[1];
         }
+    }
+
+    private static String compactJson(Gson gson, String jsonSWithSpaces) {
+        return gson.toJson(JsonParser.parseString(jsonSWithSpaces));
     }
 }
