@@ -36,6 +36,7 @@ public class App2 {
         logger.info("{} DB - table {}", dbType(jdbcUrl), tableName);
         String[] jsons = {
             "{\"customer_name\": \"John\", \"items\": { \"description\": \"milk\", \"quantity\": 4 } }",
+            null,
             "{\"customer_name\": \"Susan\", \"items\": { \"description\": \"bread\", \"quantity\": 2 } }",
             "{\"customer_name\": \"Mark\", \"items\": { \"description\": \"bananas\", \"quantity\": 12 } }",
             "{\"customer_name\": \"Jane\", \"items\": { \"description\": \"cereal\", \"quantity\": 1 } }"
@@ -65,11 +66,15 @@ public class App2 {
             logger.info("column 2 typeName {}", rsmd.getColumnTypeName(2));
             String joeJson;
             while (rs.next()) {
-                try (InputStream is = rs.getBinaryStream(2);
-                     BufferedReader br = new BufferedReader(new InputStreamReader(is))
-                ) {
-                    joeJson = br.lines().reduce("", String::concat);
-                    System.out.printf("length %d: %s%n", joeJson.length(), joeJson);
+                try (InputStream is = rs.getBinaryStream(2)) {
+                    if (is == null) {
+                        System.out.println("NULL JSON field");
+                    } else {
+                        try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+                            joeJson = br.lines().reduce("", String::concat);
+                            System.out.printf("length %d: %s%n", joeJson.length(), joeJson);
+                        }
+                    }
                 }
             }
         } catch (SQLException e) {
