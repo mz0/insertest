@@ -42,7 +42,7 @@ public class MysqlStats {
                 .filter(e -> !((e.getValue() instanceof String) || e.getKey().equals(UpStatKey)))
                 .map(e -> { String k = e.getKey();
                     return new AbstractMap.SimpleEntry<>(k, this.getLong(k) - other.getLong(k)); })
-                .filter(e -> e.getValue() >= threshold)
+                .filter(e -> (e.getValue() >= threshold) || e.getKey().equals(UpProcKey))
                 .sorted(Map.Entry.comparingByValue())
                 .collect(Collectors.toList());
     }
