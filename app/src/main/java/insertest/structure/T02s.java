@@ -4,23 +4,23 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class T01 extends StoredUnit {
-    public static final String TABLE_NAME = "pd";
-    public static final T01 aSample;
+public class T02s extends StoredUnit {
+    public static final String TABLE_NAME = "cm";
+    public static final T02s aSample;
 
     static {
         byte[] empty = {};
-        aSample = new T01(empty);
+        aSample = new T02s(empty);
     }
 
-    public static T01 justSample() {
+    public static T02s justSample() {
         return aSample;
     }
 
     private final byte[] pBytes;
 
-    public T01(byte[] ba) { pBytes = ba; note = null; }
-    public T01(byte[] ba, String note) { pBytes = ba; this.note = note; }
+    public T02s(byte[] ba) { pBytes = ba; note = null; }
+    public T02s(byte[] ba, String note) { pBytes = ba; this.note = note; }
 
     @Override
     public String getTableName() {
