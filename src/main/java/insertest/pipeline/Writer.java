@@ -14,9 +14,10 @@ public class Writer {
 
     public CompletionStage<Object> longOp(int remainder, List<Integer> sequence) {
         try {
-            TimeUnit.MILLISECONDS.sleep(5 + (15 * remainder) + Math.round(5 * Math.random()));
+            TimeUnit.MILLISECONDS.sleep(5 /*+ (15 * remainder)*/ + Math.round(5 * Math.random()));
             log.info("thread {} / rem{}: {}", Thread.currentThread().getName(), remainder, intSeq(sequence));
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(
+                    String.format("(remainder %d) %d records OK", remainder, sequence.size()));
         } catch (InterruptedException ex) {
             return CompletableFuture.failedFuture(ex);
         }
