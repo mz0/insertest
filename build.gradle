@@ -1,5 +1,11 @@
 plugins {
-    application
+    id 'application'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
 }
 
 repositories {
@@ -17,5 +23,9 @@ dependencies {
 }
 
 application {
-    mainClass.set("insertest.App2")
+    mainClass = "insertest.App2"
+}
+
+test {
+    useJUnitPlatform()
 }
