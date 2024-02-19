@@ -30,27 +30,22 @@ public class App {
         var writer = new Writer(connectOpts, asyncWrites);
         //log.info("creating 100 simple tables");
         //writer.makeSimpleTables(100); log.info("100 simple tables created OK");
-        var scheduler = Schedulers.newParallel("async", asyncWrites, /* daemon */ false);
         Flux.range(0, 160).groupBy(i -> i % modulo)
-                .flatMap(groupedFlux -> groupedFlux.buffer(3)
-                      //.publishOn(Schedulers.newParallel("async", modulo)) // FIXME main() will not finish!
-                        // daemon=true - main() does no work, =false - hangs as above
-                        .map(list -> {log.info("list {}", list.size()); return list;})
-                        .publishOn(scheduler)
+                .flatMap(groupedFlux -> {log.info("grpFlux {}", groupedFlux.key());
+                         return groupedFlux.buffer(3)
                         .flatMap(list -> {
                             log.info("{} mod{} list.size={}", groupedFlux.key(), modulo, list.size());
                             Mono<Object> asyncOpResult = Mono.defer(() -> Mono.fromCompletionStage(
                                     writer.longOp(groupedFlux.key(), list))
                             );
                             return Flux.concatDelayError(asyncOpResult);
-                        })
-                )
-                .subscribe(r -> log.info("done {}", r), error -> log.error("{}", error));
+                        }, /* concurrency */ 1);
+                }, /* concurrency */ modulo)
+                .doOnNext(r -> log.info("done {}", r))
+                .doOnError(error -> log.error("{}", error))
+                .doOnComplete(() -> { log.info("Pipeline complete"); })
+                .subscribe();
 
-        log.info("Set-up complete");
-        TimeUnit.MILLISECONDS.sleep(2_000); // 2 seconds wait for completion (fingers crossed)
-        //scheduler.disposeGracefully();
-        scheduler.dispose();
 //        Future<Void> closeResult = writer.close();
 //        if (closeResult.isComplete()) log.info("AsyncWriter closed");
         log.info("Finished");
