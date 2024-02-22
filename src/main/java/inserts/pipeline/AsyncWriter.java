@@ -55,10 +55,10 @@ public class AsyncWriter {
         return pool.withTransaction(conn -> conn
                     .preparedQuery(query)
                     .execute(allValues)
-                    .compose(insertResultRowSet -> {
+                    .map(insertResultRowSet -> {
                         log.info("TABLE {}: batch {} saved.", tableName, batch);
-                        return Future.succeededFuture(batch);
-                        }, Future::failedFuture
+                        return batch;
+                        }
                     )
                 ).toCompletionStage().toCompletableFuture();
     }

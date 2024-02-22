@@ -41,22 +41,22 @@ public class App {
         log.info("{} simple tables OK", numberOfTables);
 
 
-        Flux.range(0, 160).groupBy(i -> i % modulo)
-                .flatMap(groupedFlux -> {log.debug("grpFlux {}", groupedFlux::key);
-                         return groupedFlux.buffer(3)
-                        .flatMap(list -> {
-                            log.debug("{} mod{} list.size={}", groupedFlux::key, () -> modulo, list::size);
-                            Mono<Object> asyncOpResult = Mono.defer(() -> Mono.fromCompletionStage(
-                                    writer.write(groupedFlux.key(), list))
-                            );
-                            return Flux.concatDelayError(asyncOpResult);
-                        }, /* concurrency */ 1);
+        Flux.range(0, 90).doOnNext(v -> log.debug("produced {}", v)).groupBy(i -> i % modulo)
+                .flatMap(groupedFlux -> {
+                    log.debug("grpFlux {}", groupedFlux::key);
+                    return groupedFlux
+                            .buffer(4)
+                            .doOnRequest(n -> log.debug("{} requested {}", groupedFlux.key(), n))
+                            .flatMap(list -> {
+                                log.debug("{} mod{} list.size={}", groupedFlux::key, () -> modulo, list::size);
+                                return Mono.fromCompletionStage(writer.write(groupedFlux.key(), list));
+                            }, /* concurrency */ 1);
                 }, /* concurrency */ modulo)
-                .doOnNext(r -> log.debug("done {}", () -> r))
+                .doOnNext(r -> log.debug("done ({}) {}", () -> r.getClass().getName(), () -> r))
                 .doOnError(error -> log.error("{}", error))
                 .doOnComplete(() -> log.info("pipeline is complete"))
                 .ignoreElements() // we need only "side effects" (writes to DB)
-                .toFuture().get(1, TimeUnit.MINUTES);
+                .toFuture().get(5, TimeUnit.MINUTES);
 
         log.info("Pipeline has finished.");
         writer.close().get(1, TimeUnit.MINUTES);
@@ -66,7 +66,7 @@ public class App {
     static ConnectOpts getDbConnectParameters(Logger log) {
         Path propFile = Paths.get("db.properties");
         String url, user, password;
-		try (FileInputStream fis = new FileInputStream(propFile.toFile())) {
+        try (FileInputStream fis = new FileInputStream(propFile.toFile())) {
             var props = new Properties();
             props.load(fis);
             url = props.getProperty("db.url", MYSQL_DEFAULT_URL);
