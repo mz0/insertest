@@ -56,7 +56,7 @@ public class AsyncWriter {
                     .preparedQuery(query)
                     .execute(allValues)
                     .map(insertResultRowSet -> {
-                        log.info("TABLE {}: batch {} saved.", tableName, batch);
+                        log.debug("TABLE {}: batch {} saved.", tableName, batch);
                         return batch;
                         }
                     )

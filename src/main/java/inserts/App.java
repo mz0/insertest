@@ -40,27 +40,30 @@ public class App {
         }
         log.info("{} simple tables OK", numberOfTables);
 
+        final int numRecords = 101_377; // typical 'gradle run' time 20 seconds (incl. 5 seconds for making 100 tables
+        final int batchSize = 64;
+        log.info("About to write {} records into {} tables in batches of {}", numRecords, numberOfTables, batchSize);
 
-        Flux.range(0, 960).doOnNext(v -> log.debug("produced {}", v)).groupBy(i -> i % modulo)
+        Flux.range(0, numRecords).doOnNext(v -> log.debug("produced {}", v)).groupBy(i -> i % modulo)
                 .flatMap(groupedFlux -> {
                     log.debug("grpFlux {}", groupedFlux::key);
                     return groupedFlux
-                            .buffer(4)
+                            .buffer(batchSize)
                             .doOnRequest(n -> log.debug("{} requested {}", groupedFlux.key(), n))
                             .flatMap(list -> {
                                 log.debug("{} mod{} list.size={}", groupedFlux::key, () -> modulo, list::size);
                                 return Mono.fromCompletionStage(() -> writer.write(groupedFlux.key(), list));
                             }, /* concurrency */ 1);
-                }, /* concurrency */ modulo, /* prefetch */ asyncWrites)
-                .doOnNext(r -> log.debug("done ({}) {}", () -> r.getClass().getName(), () -> r))
+                }, /* concurrency */ modulo)
+                .doOnNext(r -> log.debug("done ({}) {}", () -> r.getClass().getSimpleName(), () -> r))
                 .doOnError(error -> log.error("{}", error))
                 .doOnComplete(() -> log.info("pipeline is complete"))
                 .ignoreElements() // we need only "side effects" (writes to DB)
-                .toFuture().get(5, TimeUnit.MINUTES);
+                .toFuture().get(2, TimeUnit.MINUTES); // see numRecords comment
 
         log.info("Pipeline has finished.");
         writer.close().get(1, TimeUnit.MINUTES);
-        log.info("AsyncWriter closed OK. All done.");
+        log.info("AsyncWriter closed OK. All {} records done.", numRecords);
     }
 
     static ConnectOpts getDbConnectParameters(Logger log) {
