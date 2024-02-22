@@ -41,7 +41,7 @@ public class App {
         log.info("{} simple tables OK", numberOfTables);
 
 
-        Flux.range(0, 90).doOnNext(v -> log.debug("produced {}", v)).groupBy(i -> i % modulo)
+        Flux.range(0, 960).doOnNext(v -> log.debug("produced {}", v)).groupBy(i -> i % modulo)
                 .flatMap(groupedFlux -> {
                     log.debug("grpFlux {}", groupedFlux::key);
                     return groupedFlux
@@ -49,9 +49,9 @@ public class App {
                             .doOnRequest(n -> log.debug("{} requested {}", groupedFlux.key(), n))
                             .flatMap(list -> {
                                 log.debug("{} mod{} list.size={}", groupedFlux::key, () -> modulo, list::size);
-                                return Mono.fromCompletionStage(writer.write(groupedFlux.key(), list));
+                                return Mono.fromCompletionStage(() -> writer.write(groupedFlux.key(), list));
                             }, /* concurrency */ 1);
-                }, /* concurrency */ modulo)
+                }, /* concurrency */ modulo, /* prefetch */ asyncWrites)
                 .doOnNext(r -> log.debug("done ({}) {}", () -> r.getClass().getName(), () -> r))
                 .doOnError(error -> log.error("{}", error))
                 .doOnComplete(() -> log.info("pipeline is complete"))
