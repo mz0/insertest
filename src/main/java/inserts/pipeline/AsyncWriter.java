@@ -19,13 +19,13 @@ import java.util.stream.Collectors;
 import static io.vertx.core.Vertx.vertx;
 import static java.util.Objects.requireNonNull;
 
-public class Writer {
+public class AsyncWriter {
     private final static Logger log = LogManager.getLogger();
 
     private final Pool pool;
     private final Vertx vtx = vertx();
 
-    public Writer(ConnectOpts connOpts, int asyncWriterPoolMax) {
+    public AsyncWriter(ConnectOpts connOpts, int asyncWriterPoolMax) {
         requireNonNull(connOpts, "ConnectOptions");
         JsonObject poolCfg = new JsonObject()
                 .put("provider_class", io.vertx.ext.jdbc.spi.impl.C3P0DataSourceProvider.class.getName())
@@ -41,8 +41,8 @@ public class Writer {
         this.pool = JDBCPool.pool(vtx, poolCfg);
     }
 
-    public CompletableFuture<List<Integer>> longOp(int remainder, List<Integer> batch) {
-        String tableName = "res" + remainder;
+    public CompletableFuture<List<Integer>> write(int remainder, List<Integer> batch) {
+        String tableName = simpleTableName(remainder);
         List<String> fields = Collections.singletonList("value");
         var perRowPlaceHolders = fields.stream().map(f -> "?").collect(Collectors.joining(",", "(", ")"));
         var allPlaceHolders = batch.stream().map(r -> perRowPlaceHolders).collect(Collectors.joining(","));
@@ -54,7 +54,12 @@ public class Writer {
         var allValues = asTuple(batch);
         return pool.withTransaction(conn -> conn
                     .preparedQuery(query)
-                    .execute(allValues).compose(r -> Future.succeededFuture(batch), Future::failedFuture)
+                    .execute(allValues)
+                    .compose(insertResultRowSet -> {
+                        log.info("TABLE {}: batch {} saved.", tableName, batch);
+                        return Future.succeededFuture(batch);
+                        }, Future::failedFuture
+                    )
                 ).toCompletionStage().toCompletableFuture();
     }
 
@@ -66,7 +71,7 @@ public class Writer {
         return result;
     }
 
-    public CompletableFuture<Boolean> ensureSimpleTable(String tableName) { // FIXME
+    public CompletableFuture<Boolean> ensureSimpleTable(String tableName) {
         return doEnsureTable(tableName).map(ar -> true)
                     .toCompletionStage().toCompletableFuture();
     }
@@ -82,9 +87,19 @@ public class Writer {
                 .execute();
     }
 
-    public Future<Void> close() {
-        pool.close();
-        log.info("DB connection Pool closed");
-        return vtx.close();
+    public CompletableFuture<Void> close() {
+        pool.close(asyncResult -> {
+            if (asyncResult.succeeded()) {
+                log.info("DB connection Pool closed OK.");
+            } else {
+                log.error("Pool.close() failed.", asyncResult.cause());
+            }
+        });
+        return vtx.close().toCompletionStage().toCompletableFuture();
+    }
+
+    public String simpleTableName(int i) {
+        if (i < 0 || i > 99) throw new IllegalArgumentException("Simple table name index must be within 0-99 range");
+        return String.format("res%02d", i);
     }
 }

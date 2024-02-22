@@ -1,8 +1,7 @@
 package inserts;
 
+import inserts.pipeline.AsyncWriter;
 import inserts.pipeline.ConnectOpts;
-import inserts.pipeline.Writer;
-import io.vertx.core.Future;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import reactor.core.publisher.Flux;
@@ -26,13 +25,14 @@ public class App {
         Logger log = LogManager.getLogger();
         var connectOpts = getDbConnectParameters(log);
         log.info("DB user={}, jdbcUrl={}", connectOpts.username, connectOpts.jdbcUrl);
-        final int modulo = 99;
-        final int asyncWrites = 22; // we have 100 independent tables, which hypothetically may be written in parallel
+        final int modulo = 100;
+        // we have 100 independent tables, all of which hypothetically may be written in parallel
+        final int asyncWrites = 22;
 
-        var writer = new Writer(connectOpts, asyncWrites);
-        int numberOfTables = modulo + 1;
+        var writer = new AsyncWriter(connectOpts, asyncWrites);
+        int numberOfTables = modulo;
         for (int i = 0; i < numberOfTables; i++) {
-            String tableName = "res" + i;
+            String tableName = writer.simpleTableName(i);
             var tableOk = writer.ensureSimpleTable(tableName).get(1000, TimeUnit.MILLISECONDS);
             if (tableOk) {
                 log.debug("{} simple table OK", tableName);
@@ -40,25 +40,27 @@ public class App {
         }
         log.info("{} simple tables OK", numberOfTables);
 
+
         Flux.range(0, 160).groupBy(i -> i % modulo)
-                .flatMap(groupedFlux -> {log.info("grpFlux {}", groupedFlux.key());
+                .flatMap(groupedFlux -> {log.debug("grpFlux {}", groupedFlux::key);
                          return groupedFlux.buffer(3)
                         .flatMap(list -> {
-                            log.info("{} mod{} list.size={}", groupedFlux.key(), modulo, list.size());
+                            log.debug("{} mod{} list.size={}", groupedFlux::key, () -> modulo, list::size);
                             Mono<Object> asyncOpResult = Mono.defer(() -> Mono.fromCompletionStage(
-                                    writer.longOp(groupedFlux.key(), list))
+                                    writer.write(groupedFlux.key(), list))
                             );
                             return Flux.concatDelayError(asyncOpResult);
                         }, /* concurrency */ 1);
                 }, /* concurrency */ modulo)
-                .doOnNext(r -> log.info("done {}", r))
+                .doOnNext(r -> log.debug("done {}", () -> r))
                 .doOnError(error -> log.error("{}", error))
-                .doOnComplete(() -> log.info("Pipeline complete"))
-                .subscribe();
+                .doOnComplete(() -> log.info("pipeline is complete"))
+                .ignoreElements() // we need only "side effects" (writes to DB)
+                .toFuture().get(1, TimeUnit.MINUTES);
 
-        Future<Void> closeResult = writer.close();
-        if (closeResult.isComplete()) log.info("AsyncWriter closed");
-        log.info("Finished");
+        log.info("Pipeline has finished.");
+        writer.close().get(1, TimeUnit.MINUTES);
+        log.info("AsyncWriter closed OK. All done.");
     }
 
     static ConnectOpts getDbConnectParameters(Logger log) {
